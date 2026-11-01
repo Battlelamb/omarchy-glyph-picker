@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "leviathan.glyph-picker",
+  "name": "Glyph Picker",
+  "version": "0.1.0",
+  "author": "Ömer Eren",
+  "license": "GPL-3.0-only",
+  "description": "Search Nerd Font symbols and explicitly copy a selected glyph.",
+  "kinds": [
+    "overlay"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "overlay": "runtime/0.1.0/GlyphPicker.qml"
+  }
+}
