@@ -1,0 +1,14 @@
+{
+  "dataset": "Nerd Fonts glyph name/codepoint metadata, private-use records only",
+  "tag": "v3.4.0",
+  "commit": "fa7b859994228a9c8759f99c55a8d31ee92a1b5e",
+  "sourceUrl": "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/fa7b859994228a9c8759f99c55a8d31ee92a1b5e/glyphnames.json",
+  "sourceSha256": "e2d10d23f5bff0bd6f0676e9b01d9789fcdc656de7b498a2955c27716ea4439c",
+  "licenseSha256": "1f6ad4edae6479aaace3112ede5279a23284ae54b2a34db66357aef5f64df160",
+  "metadataLicense": "MIT",
+  "licenseBasis": "Root LICENSE: source files not in folders containing an explicit license use MIT. No font outlines are included.",
+  "transform": "Sort canonical names; retain single Unicode private-use characters and canonical ASCII names; output character TAB name LF.",
+  "records": 10757,
+  "outputSha256": "d19a8edf0beed07f4b273bfd721fa0f52a50fe9d80ea9e1fc542df201b807f25",
+  "outputBytes": 237078
+}
