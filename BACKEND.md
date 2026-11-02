@@ -4,7 +4,7 @@
 
 Primary verb: `copy`; rows contain canonical `id`, searchable human-readable name in `label`, Unicode codepoint in `detail`, and the single private-use glyph in the parent-approved optional `glyph` field. The bundle has 10,757 Nerd Fonts v3.4.0 mappings, including supplementary-plane characters. Names/aliases remain distinct stable IDs. `action --id cod-add --verb copy --apply` re-reads the complete corpus, then calls `wl-copy --type text/plain;charset=utf-8 -- <glyph>`. There is no clipboard read, history, recent-items store, paste or font installation.
 
-The mapping is a directly rights-traced MIT metadata derivative of Nerd Fonts `glyphnames.json`; it is **not the HyDE glyph.db file** and not font artwork. See `NOTICE.backend.md`, `runtime/0.2.0/data/LICENSE.nerd-fonts`, and `runtime/0.2.0/data/provenance.json`. A compatible installed Nerd Font is required for rendering; missing font coverage can show tofu while names/codepoints still work.
+The mapping is a directly rights-traced MIT metadata derivative of Nerd Fonts `glyphnames.json`; it is **not the HyDE glyph.db file** and not font artwork. See `NOTICE.backend.md`, `runtime/0.2.1/data/LICENSE.nerd-fonts`, and `runtime/0.2.1/data/provenance.json`. A compatible installed Nerd Font is required for rendering; missing font coverage can show tofu while names/codepoints still work.
 
 ## Bounds and limitations
 
@@ -12,7 +12,7 @@ Bundled input only, maximum 1 MiB and 16,384 physical records; names match canon
 
 ## CLI and safety contract
 
-Run with `/usr/bin/python3 runtime/0.2.0/backend.py catalog`, or `action --id <exact-known-id> --verb <primary-verb> --apply`. The catalogue is read-only. Runtime/data paths derive from `__file__`, never cwd. One bounded JSON object is emitted; errors are JSON with nonzero exit and no traceback/provider output. Unknown IDs/verbs, missing `--apply`, unavailable providers, nonzero helper exits and deadlines fail closed. Selection is checked against fresh full bounded membership, not the displayed list. **No restore operation is supported or advertised**: copying and launching do not have a meaningful reversible restore.
+Run with `/usr/bin/python3 runtime/0.2.1/backend.py catalog`, or `action --id <exact-known-id> --verb <primary-verb> --apply`. The catalogue is read-only. Runtime/data paths derive from `__file__`, never cwd. One bounded JSON object is emitted; errors are JSON with nonzero exit and no traceback/provider output. Unknown IDs/verbs, missing `--apply`, unavailable providers, nonzero helper exits and deadlines fail closed. Selection is checked against fresh full bounded membership, not the displayed list. **No restore operation is supported or advertised**: copying and launching do not have a meaningful reversible restore.
 
 Actions use literal argument vectors, no shell/eval, no execution of commands from displayed metadata. Helpers are found on normal PATH (tests replace it with a private shim directory); their stdin/stdout/stderr are discarded. GNU `/usr/bin/timeout --signal=KILL 3` supplies an independent process-group deadline even if the QML-owned backend is killed; a five-second Python wait is backup. An already-successful app launch/clipboard ownership can intentionally outlive its short helper. Cancelling after dispatch cannot revoke an accepted action. A timeout does not prove that the request had no effect.
 
