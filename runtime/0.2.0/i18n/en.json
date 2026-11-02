@@ -1,0 +1,27 @@
+{
+  "search": "Search glyph names…",
+  "loading": "Loading…",
+  "empty": "No matching items",
+  "loadFailed": "Unable to load catalogue. Check the backend and try Refresh.",
+  "apply": "Apply",
+  "copy": "Copy glyph",
+  "launch": "Launch",
+  "export": "Export",
+  "restore": "Restore",
+  "confirm": "Keep effect",
+  "select": "Select an item",
+  "refresh": "Refresh",
+  "working": "Working…",
+  "keys": "Arrows select · Enter copy · Esc close",
+  "results": {
+    "one": "%1 glyph shown",
+    "other": "%1 glyphs shown"
+  },
+  "title": "Glyph Picker",
+  "explore": "Explore",
+  "configure": "Configure",
+  "clearSearch": "Clear search",
+  "details": "Selection details",
+  "subtitle": "Find a symbol. Copy it in one step.",
+  "safety": "Copy replaces the clipboard only when you choose it."
+}
