@@ -18,6 +18,9 @@ import preferences
 
 SLUG = 'glyph-picker'
 PREFERENCE_SCHEMA = {
+    'density': {'type':'enum', 'default':'comfortable', 'label':'Density', 'choices':['comfortable','compact']},
+    'layout': {'type':'enum', 'default':'grid', 'label':'Layout', 'choices':['grid','list']},
+    'sortOrder': {'type':'enum', 'default':'default', 'label':'Sort order', 'choices':['default','name','favorites-first']},
     'view': {'type':'enum', 'default':'all', 'label':'Show', 'choices':['all','favorites','recent']},
     'collection': {'type':'string', 'default':'', 'label':'Personal collection (empty = all)', 'maxLength':256},
     'category': {'type':'enum', 'default':'all', 'label':'Named collection', 'choices':['all','developer','arrows','media','weather','status']},
@@ -95,7 +98,7 @@ def catalog():
         rows = [row for row in rows if re.search(patterns[category], row['id'])]
         for row in rows:
             row.setdefault('collection', category)
-    return {**metadata, 'rows': rows, 'message': f'{len(rows)} Nerd Font glyphs match saved filters; font required for rendering.', 'actions': ['copy', 'copy-codepoint', 'favorite'], 'actionLabel': 'Copy'}
+    return {**metadata, 'rows': rows, 'message': f'{len(rows)} Nerd Font glyphs match saved filters; font required for rendering.', 'actions': ['copy', 'copy-codepoint', 'copy-unicode', 'favorite'], 'actionLabel': 'Copy'}
 
 
 def run_helper(argv):
@@ -188,15 +191,18 @@ def main():
                 raise ValueError('This action does not accept a payload.')
             if not args.apply:
                 raise ValueError('Explicit --apply is required; nothing changed.')
-            if args.verb not in ('copy', 'copy-codepoint'):
-                raise ValueError('Unsupported action; use copy or copy-codepoint.')
+            if args.verb not in ('copy', 'copy-codepoint', 'copy-unicode'):
+                raise ValueError('Unsupported action; use copy, copy-codepoint or copy-unicode.')
             row = next((r for r in glyph_rows() if r['id'] == args.id), None)
             if row is None:
                 raise ValueError('Selection is unknown or no longer available; refresh the catalogue.')
-            run_helper(['wl-copy', '--type', 'text/plain;charset=utf-8', '--', row['glyph'] if args.verb == 'copy' else row['detail']])
-            copied = 'glyph' if args.verb == 'copy' else 'code point'
+            value = row['glyph'] if args.verb == 'copy' else row['detail']
+            if args.verb == 'copy-unicode':
+                value = json.dumps(row['glyph'], ensure_ascii=True)[1:-1]
+            run_helper(['wl-copy', '--type', 'text/plain;charset=utf-8', '--', value])
+            copied = {'copy':'glyph', 'copy-codepoint':'code point', 'copy-unicode':'escaped Unicode text'}[args.verb]
             result = {'ok': True, 'message': f'Clipboard helper accepted the selected {copied}; no paste was performed.'}
-        if args.command == 'action' and args.verb in ('copy', 'copy-codepoint'):
+        if args.command == 'action' and args.verb in ('copy', 'copy-codepoint', 'copy-unicode'):
             try:
                 result['preferences'] = preferences.remember(SLUG, PREFERENCE_SCHEMA, args.id)
             except (ValueError, OSError, UnicodeError):

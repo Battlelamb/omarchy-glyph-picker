@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0 — development/testing source snapshot
+
+- Copy literal escaped Unicode, including supplementary surrogate pairs, from validated bundled glyphs.
+- Add saved grid/list layout, comfortable/compact density and deterministic default/name/favorites-first ordering. Preserve legacy preferences outside the installed source and explicit Reset.
+- Refresh the native Explore/Configure surfaces and plugin-specific documentation. Keep standalone packages, explicit actions and recovery guards.
+- Synchronize native cancellation fixtures on bounded child readiness instead of a fixed startup delay; production process ownership is unchanged.
+- Final qualification results and limits are recorded separately; source publication is not live-action, full-shell, GPU or marketplace approval.
+
 ## 0.3.0 — UNRELEASED qualification candidate
 
 - Add persistent favorites, recent copies, named collections and saved default-view settings for the bundled glyph catalogue.

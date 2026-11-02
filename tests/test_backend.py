@@ -11,6 +11,13 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / Path(json.loads((ROOT / 'manifest.json').read_text())['entryPoints']['overlay']).parent / 'backend.py'
 
+def child_running(statfile):
+    try:
+        stat = statfile.read_text()
+    except FileNotFoundError:
+        return False
+    return stat.rpartition(') ')[2].split()[0] not in ('Z','X')
+
 class BackendTests(unittest.TestCase):
     def test_legacy_large_preferences_preserve_confirmed_action_and_usable_reads(self):
         # Seed an old valid store directly: new writes have a smaller aggregate budget.
@@ -182,27 +189,62 @@ class BackendTests(unittest.TestCase):
         self.assertTrue(self.cli('action','--id',row['id'],'--verb','copy','--apply')['ok'])
         self.assertEqual(self.calls()[0]['argv'][-1],row.get('glyph'))
 
+    def test_child_running_vanished_stat_file(self):
+        statfile = self.put('child.stat', '123 (worker) S 0')
+        class VanishingStat:
+            def exists(self):
+                return statfile.exists()
+            def read_text(self):
+                statfile.unlink()
+                return statfile.read_text()
+        self.assertFalse(child_running(VanishingStat()))
+        self.assertFalse(statfile.exists())
+
+    def test_child_running_states_and_comm(self):
+        statfile = self.home/'child.stat'
+        self.assertFalse(child_running(statfile))
+        for comm in ('worker', 'worker ) Z'):
+            for state in ('R', 'S', 'D', 'T', 't', 'I', 'Z', 'X'):
+                with self.subTest(comm=comm, state=state):
+                    statfile.write_text(f'123 ({comm}) {state} 0')
+                    self.assertEqual(child_running(statfile), state not in ('Z', 'X'))
+
+    def test_child_running_read_errors_propagate(self):
+        from unittest.mock import patch
+        statfile = self.put('child.stat', '123 (worker) S 0')
+        for error in (PermissionError, OSError):
+            with self.subTest(error=error), patch.object(Path, 'read_text', side_effect=error):
+                with self.assertRaises(error):
+                    child_running(statfile)
+
     def test_independent_deadline_survives_backend_termination(self):
-        import time
+        import signal, time
         pass
         self.shim('wl-copy',body='import signal\nchild=os.fork()\nif child == 0:\n signal.signal(signal.SIGTERM,signal.SIG_IGN)\n time.sleep(30)\n sys.exit(0)\n(Path(os.environ["HOME"])/"child.pid").write_text(str(child))\ntime.sleep(30)')
         proc=subprocess.Popen(['/usr/bin/python3',str(BACKEND),'action','--id','cod-add','--verb','copy','--apply'],env=self.env,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
         pidfile=self.home/'child.pid'
+        def cleanup():
+            if proc.poll() is None:
+                proc.kill()
+            proc.wait(timeout=2)
+            if pidfile.exists():
+                try:
+                    os.kill(int(pidfile.read_text()),signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+        self.addCleanup(cleanup)
         deadline=time.monotonic()+2
         while not pidfile.exists() and time.monotonic()<deadline:
             time.sleep(.02)
         self.assertTrue(pidfile.exists())
         pid=int(pidfile.read_text())
         proc.terminate();proc.wait(timeout=2)
+        self.assertEqual(proc.returncode,-signal.SIGTERM)
         deadline=time.monotonic()+5
-        def running():
-            statfile=Path('/proc')/str(pid)/'stat'
-            return statfile.exists() and statfile.read_text().split()[2] not in ('Z','X')
-        while running() and time.monotonic()<deadline:
+        statfile=Path('/proc')/str(pid)/'stat'
+        while child_running(statfile) and time.monotonic()<deadline:
             time.sleep(.05)
-        alive=running()
-        if alive:
-            os.kill(pid,9)
+        alive=child_running(statfile)
         self.assertFalse(alive,'helper outlived its deadline after backend termination')
 
     def test_copy_codepoint_uses_selected_mapping_not_input_text(self):
@@ -316,12 +358,149 @@ class BackendTests(unittest.TestCase):
         import re
         for name in ('README.md','BACKEND.md','NOTICE.backend.md'):
             text=(ROOT/name).read_text()
-            self.assertNotIn('/home/leviathan',text)
+            self.assertNotRegex(text,r'/home/(?!user/)[^\s`]+')
             self.assertNotIn('/srv/projects',text)
             self.assertNotIn('runtime/0.2.1/',text)
             for target in re.findall(r'\]\(([^)]+)\)',text):
                 if not target.startswith(('https://','http://','#')):
                     self.assertTrue((ROOT/target.split('#')[0]).is_file(),target)
+
+    def test_common_display_schema_saves_exact_choices_and_resets_defaults(self):
+        expected = {'density': ('comfortable', ['comfortable', 'compact']),
+                    'layout': ('grid', ['grid', 'list']),
+                    'sortOrder': ('default', ['default', 'name', 'favorites-first'])}
+        result = self.cli('preferences')
+        for key, (default, choices) in expected.items():
+            self.assertIn(key, result['settingsSchema'])
+            self.assertEqual(result['settingsSchema'][key]['type'], 'enum')
+            self.assertEqual(result['settingsSchema'][key]['default'], default)
+            self.assertEqual(result['settingsSchema'][key]['choices'], choices)
+            self.assertEqual(result['preferences']['options'][key], default)
+        self.assertFalse((self.home/'.config').exists())
+        chosen = {'density':'compact', 'layout':'list', 'sortOrder':'favorites-first'}
+        result = self.cli('preferences', '--apply', '--payload', json.dumps({'options':chosen}))
+        for key, value in chosen.items():
+            self.assertEqual(result['preferences']['options'][key], value)
+        before = self.cli('preferences')['preferences']
+        self.assertEqual(before, result['preferences'])
+        for key in expected:
+            for value in ['../../invalid', '', True, 1, None, [], {}]:
+                with self.subTest(key=key, value=value):
+                    self.assertFalse(self.cli('preferences', '--apply', '--payload',
+                        json.dumps({'options':{key:value}}), rc=1)['ok'])
+                    self.assertEqual(self.cli('preferences')['preferences'], before)
+        self.cli('preferences', '--apply', '--payload', '{"options":{"sortOrder":"name"}}')
+        result = self.cli('preferences', '--apply', '--payload', '{"reset":true}')
+        for key, (default, _) in expected.items():
+            self.assertEqual(result['preferences']['options'][key], default)
+        self.assertEqual(self.calls(), [])
+
+    def test_copy_unicode_uses_bundled_scalar_as_literal_escape_text(self):
+        rows = self.cli('catalog')['rows']
+        supplementary = next(row for row in rows if ord(row['glyph']) > 0xffff)
+        self.shim('wl-copy')
+        for row in [next(row for row in rows if row['id'] == 'cod-add'), supplementary]:
+            result = self.cli('action', '--id', row['id'], '--verb', 'copy-unicode', '--apply')
+            self.assertTrue(result['ok'])
+            expected = json.dumps(row['glyph'], ensure_ascii=True)[1:-1]
+            self.assertEqual(self.calls()[-1]['argv'][1:], ['--type','text/plain;charset=utf-8','--',expected])
+            self.assertEqual(self.calls()[-1]['stdin'], '')
+            self.assertEqual(json.loads('"'+expected+'"'), row['glyph'])
+            self.assertEqual(len(expected), 12 if ord(row['glyph']) > 0xffff else 6)
+            self.assertEqual(result['preferences']['recent'][0], row['id'])
+            self.assertIn('escaped Unicode', result['message'])
+        self.assertEqual(self.cli('catalog')['actions'], ['copy','copy-codepoint','copy-unicode','favorite'])
+
+    def test_display_defaults_upgrade_old_options_without_rewriting_store(self):
+        self.cli('preferences', '--apply', '--payload', '{"options":{"view":"favorites"},"favorites":["inert-id"]}')
+        store = next((self.home/'.config/omarchy/lego').glob('*/preferences.json'))
+        legacy = json.loads(store.read_bytes())
+        for key in ('density', 'layout', 'sortOrder'):
+            legacy['options'].pop(key)
+        store.write_text(json.dumps(legacy))
+        original = store.read_bytes()
+        result = self.cli('preferences')['preferences']
+        self.assertEqual(result['favorites'], ['inert-id'])
+        self.assertEqual(result['options']['view'], 'favorites')
+        self.assertEqual({key:result['options'][key] for key in ('density','layout','sortOrder')},
+                         {'density':'comfortable', 'layout':'grid', 'sortOrder':'default'})
+        self.assertEqual(store.read_bytes(), original)
+        self.assertEqual(self.calls(), [])
+
+    def test_copy_unicode_requires_apply_fresh_mapping_and_no_caller_payload(self):
+        self.shim('wl-copy')
+        for args in [('--id','cod-add'), ('--id','../../glyph'), ('--id','cod-add','--payload','{}')]:
+            command = ['action', '--verb', 'copy-unicode', *args]
+            if args != ('--id','cod-add'):
+                command.append('--apply')
+            self.assertFalse(self.cli(*command, rc=1)['ok'])
+        runtime = self.home/'runtime'
+        runtime.mkdir()
+        copied = runtime/'backend.py'
+        copied.write_bytes(BACKEND.read_bytes())
+        (runtime/'preferences.py').write_bytes((BACKEND.parent/'preferences.py').read_bytes())
+        data = runtime/'data/glyphs.tsv'
+        data.parent.mkdir()
+        data.write_text('\uea60\tselected\n')
+        def run(*args):
+            result = subprocess.run(['/usr/bin/python3',str(copied),*args], env=self.env, capture_output=True, timeout=8)
+            self.assertNotIn(b'Traceback',result.stdout+result.stderr)
+            return result.returncode, json.loads(result.stdout)
+        self.assertEqual(run('catalog')[1]['rows'][0]['id'], 'selected')
+        data.write_text('\uea61\treplacement\n')
+        code, result = run('action','--id','selected','--verb','copy-unicode','--apply')
+        self.assertEqual(code, 1)
+        self.assertFalse(result['ok'])
+        self.assertEqual(self.calls(), [])
+        self.assertEqual(self.cli('preferences')['preferences']['recent'], [])
+
+    def test_copy_unicode_helper_failures_do_not_remember_or_undo_acceptance(self):
+        args = ('action','--id','cod-add','--verb','copy-unicode','--apply')
+        self.assertFalse(self.cli(*args, rc=1)['ok'])
+        self.shim('wl-copy', rc=4)
+        self.assertFalse(self.cli(*args, rc=1)['ok'])
+        self.assertEqual(self.cli('preferences')['preferences']['recent'], [])
+        self.shim('wl-copy', body='time.sleep(30)')
+        self.assertIn('timed out', self.cli(*args, rc=1)['message'])
+        self.assertEqual(self.cli('preferences')['preferences']['recent'], [])
+        self.shim('wl-copy')
+        self.cli('preferences', '--apply', '--payload', '{"options":{"category":"weather"}}')
+        store = self.home/'.config/omarchy/lego/glyph-picker/preferences.json'
+        store.write_text('broken')
+        result = self.cli(*args)
+        self.assertTrue(result['ok'])
+        self.assertIn('warning', result['message'].lower())
+        self.assertEqual(store.read_text(), 'broken')
+        self.assertEqual(self.calls()[-1]['argv'][-1], r'\uea60')
+
+    def test_current_feature_docs_match_versioned_backend_contract(self):
+        for name in ('README.md', 'BACKEND.md'):
+            text = (ROOT/name).read_text()
+            self.assertIn('v0.4.0', text)
+            for key in ('density', 'layout', 'sortOrder', 'copy-unicode'):
+                self.assertIn(key, text)
+        reference = (ROOT/'BACKEND.md').read_text()
+        self.assertIn('runtime/0.4.0/backend.py', reference)
+        self.assertNotIn('runtime/0.3.0/backend.py', reference)
+
+    def test_new_copy_preserves_accepted_result_when_optional_snapshot_exceeds_wire_budget(self):
+        self.shim('wl-copy')
+        prefs = self.cli('preferences')['preferences']
+        prefs['collections'] = {'g'+str(n): [str(i).zfill(4)+'x'*252 for i in range(512)] for n in range(9)}
+        store = self.home/'.config/omarchy/lego/glyph-picker/preferences.json'
+        store.parent.mkdir(parents=True)
+        store.parent.parent.chmod(0o700)
+        store.parent.chmod(0o700)
+        raw = json.dumps(prefs, ensure_ascii=False, separators=(',',':')).encode('utf-8')
+        self.assertGreater(len(raw), 1048576)
+        store.write_bytes(raw)
+        store.chmod(0o600)
+        result = self.cli('action','--id','cod-add','--verb','copy-unicode','--apply')
+        self.assertTrue(result['ok'])
+        self.assertIn('warning', result['message'].lower())
+        self.assertNotIn('preferences', result)
+        self.assertEqual(self.calls()[0]['argv'][-1], '\\uea60')
+        self.assertEqual(store.read_bytes(), raw)
 
 if __name__ == '__main__':
     unittest.main()
