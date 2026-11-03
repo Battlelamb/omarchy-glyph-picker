@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "id": "leviathan.glyph-picker",
+  "id": "battlelamb.glyph-picker",
   "name": "Glyph Picker",
-  "version": "0.4.0",
-  "author": "Ömer Eren",
+  "version": "0.4.1",
+  "author": "Battlelamb",
   "license": "GPL-3.0-only",
-  "description": "Search bundled Nerd Font symbols, inspect their names and code points, then explicitly copy a glyph. Requires an installed Nerd Font; no font files are bundled. Open: omarchy-shell shell summon leviathan.glyph-picker. Type to search; arrows select; Enter acts; Esc closes.",
+  "description": "Search bundled Nerd Font symbols, inspect their names and code points, then explicitly copy a glyph. Requires an installed Nerd Font; no font files are bundled. Open: omarchy-shell shell summon battlelamb.glyph-picker. Type to search; arrows select; Enter acts; Esc closes.",
   "kinds": [
     "overlay"
   ],
   "keepLoaded": true,
   "entryPoints": {
-    "overlay": "runtime/0.4.0/GlyphPicker.qml"
+    "overlay": "runtime/0.4.1/GlyphPicker.qml"
   }
 }

@@ -9,7 +9,7 @@ Search **10,757 bundled Nerd Fonts mappings**, inspect a symbol, then copy the c
 
 [Install](#install-and-open) · [Controls](#controls) · [Preferences](#make-it-yours) · [Limits](#limits-and-safety) · [Backend reference](BACKEND.md)
 
-> **v0.4.0 · development candidate, not a stable release.** Offline backend checks cover the new copy verb and saved schemas. Earlier open/close checks do not qualify this candidate; live clipboard ownership, native UI integration and full-shell upgrade/rollback remain separate gates. The install command follows the published repository, which may still be an earlier version.
+> **v0.4.1 · development candidate, not a stable release.** Public namespace and metadata update; backend actions and saved preferences are unchanged. Earlier checks do not qualify this patch: full offline, live actions, native integration and full-shell upgrade/rollback require separate verification. Installation follows the published branch, which may still be an earlier version.
 
 ![Glyph Picker 0.4.0 native Browse with illustrative catalogue data](preview.png)
 
@@ -37,6 +37,10 @@ Search **10,757 bundled Nerd Fonts mappings**, inspect a symbol, then copy the c
 
 Named collections are deterministic name-based filters, not exhaustive semantic categories. Aliases remain separate mappings. The bundle contains metadata, **not a font**: install a compatible Nerd Font separately for rendering.
 
+## Namespace migration in 0.4.1
+
+The plugin now uses `battlelamb.glyph-picker`. Existing enabled-plugin, menu and launcher references need an explicit update; a normal source updater cannot silently rename a manifest ID. Back up those references before changing them. Preferences remain at the same `omarchy/lego/glyph-picker/preferences.json` path, so no preference migration or reset is needed.
+
 ## Install and open
 
 Requires **Omarchy Quattro** with compatible Quickshell/Qt, `qs.Ui` and `qs.Commons`, system Python 3, GNU `timeout`, and `wl-copy` from `wl-clipboard` for copying. No companion plugin, hub or extra service is required.
@@ -45,7 +49,7 @@ Review the source before enabling this testing snapshot:
 
 ```sh
 omarchy plugin add https://github.com/Battlelamb/omarchy-glyph-picker.git --enable
-omarchy-shell shell summon leviathan.glyph-picker
+omarchy-shell shell summon battlelamb.glyph-picker
 ```
 
 <details>
@@ -57,7 +61,7 @@ Installation does **not** add a menu entry or hotkey. Back up `~/.config/omarchy
 {
   "trigger.glyph-picker": {
     "label": "Glyph Picker",
-    "action": "omarchy-shell shell summon leviathan.glyph-picker"
+    "action": "omarchy-shell shell summon battlelamb.glyph-picker"
   }
 }
 ```
@@ -107,7 +111,7 @@ If `XDG_CONFIG_HOME` is unset or relative, the fallback is `~/.config/omarchy/le
 <details>
 <summary><strong>Verification and troubleshooting</strong></summary>
 
-The shipped offline suite uses a fake HOME and controlled clipboard helpers. Native component tests are offscreen fixtures, not live clipboard integration. Historical preview and earlier-version checks do not qualify the v0.4.0 display controls or live clipboard actions. See [validation notes](docs/VALIDATION.md) and [CI scope](docs/CI.md); the badge links to the actual hosted workflow status.
+The shipped offline suite uses a fake HOME and controlled clipboard helpers. Native component tests are offscreen fixtures, not live clipboard integration. Historical preview and earlier-version checks do not qualify the v0.4.1 display controls or live clipboard actions. See [validation notes](docs/VALIDATION.md) and [CI scope](docs/CI.md); the badge links to the actual hosted workflow status.
 
 From a checkout, using an existing private scratch directory as `TMPDIR`:
 
@@ -133,8 +137,8 @@ The [backend reference](BACKEND.md) documents the exact CLI, filter rules, stora
 <summary><strong>Disable or remove</strong></summary>
 
 ```sh
-omarchy plugin disable leviathan.glyph-picker
-omarchy plugin remove leviathan.glyph-picker
+omarchy plugin disable battlelamb.glyph-picker
+omarchy plugin remove battlelamb.glyph-picker
 ```
 
 If you added the optional menu entry, remove that entry separately. Use Reset first if you want this plugin's saved preferences cleared.
@@ -143,4 +147,4 @@ If you added the optional menu entry, remove that entry separately. Use Reset fi
 
 ---
 
-Independent community plugin, not an official Omarchy or HyDE release. Original code: **GPL-3.0-only**. Nerd Fonts mapping metadata retains its **MIT** notice; no font binary is bundled. [License](LICENSE) · [Source notices](NOTICE.md) · [Mapping provenance](runtime/0.4.0/data/provenance.json) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+Independent community plugin, not an official Omarchy or HyDE release. Original code: **GPL-3.0-only**. Nerd Fonts mapping metadata retains its **MIT** notice; no font binary is bundled. [License](LICENSE) · [Source notices](NOTICE.md) · [Mapping provenance](runtime/0.4.1/data/provenance.json) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)

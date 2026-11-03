@@ -1,19 +1,19 @@
-# Glyph Picker backend · v0.4.0
+# Glyph Picker backend · v0.4.1
 
 ## Exact CLI
 
 Run from the checkout root; runtime/data paths themselves derive from `__file__`, not the working directory.
 
 ```sh
-/usr/bin/python3 runtime/0.4.0/backend.py catalog
-/usr/bin/python3 runtime/0.4.0/backend.py preferences
-/usr/bin/python3 runtime/0.4.0/backend.py preferences --apply --payload '{"options":{"category":"developer","view":"all"}}'
-/usr/bin/python3 runtime/0.4.0/backend.py preferences --apply --payload '{"collections":{"Work":["cod-add","dev-python"]},"options":{"collection":"Work"}}'
-/usr/bin/python3 runtime/0.4.0/backend.py preferences --apply --payload '{"reset":true}'
-/usr/bin/python3 runtime/0.4.0/backend.py action --id cod-add --verb copy --apply
-/usr/bin/python3 runtime/0.4.0/backend.py action --id cod-add --verb copy-codepoint --apply
-/usr/bin/python3 runtime/0.4.0/backend.py action --id cod-add --verb copy-unicode --apply
-/usr/bin/python3 runtime/0.4.0/backend.py action --id cod-add --verb favorite --apply
+/usr/bin/python3 runtime/0.4.1/backend.py catalog
+/usr/bin/python3 runtime/0.4.1/backend.py preferences
+/usr/bin/python3 runtime/0.4.1/backend.py preferences --apply --payload '{"options":{"category":"developer","view":"all"}}'
+/usr/bin/python3 runtime/0.4.1/backend.py preferences --apply --payload '{"collections":{"Work":["cod-add","dev-python"]},"options":{"collection":"Work"}}'
+/usr/bin/python3 runtime/0.4.1/backend.py preferences --apply --payload '{"reset":true}'
+/usr/bin/python3 runtime/0.4.1/backend.py action --id cod-add --verb copy --apply
+/usr/bin/python3 runtime/0.4.1/backend.py action --id cod-add --verb copy-codepoint --apply
+/usr/bin/python3 runtime/0.4.1/backend.py action --id cod-add --verb copy-unicode --apply
+/usr/bin/python3 runtime/0.4.1/backend.py action --id cod-add --verb favorite --apply
 ```
 
 These are all supported commands/verbs. `copy` remains the primary action; `copy-codepoint`, `copy-unicode` and `favorite` are secondary. No Restore, paste, arbitrary clipboard text, custom database path or output path. Neither `catalog` nor a preference read writes files. Actions accept no payload. Every action and preference write requires `--apply`. Unexpected command options, unknown IDs/verbs and malformed JSON fail with nonzero exit and one plain JSON error object; no traceback or provider output is exposed.
@@ -59,4 +59,4 @@ TMPDIR="${TMPDIR:?Set TMPDIR to an existing private scratch directory}" env -u P
 
 The shipped runner invokes unittest discovery inside offline bwrap with cleared environment, fake HOME, no live display/session bus/compositor sockets and production setters masked. It does not create receipts itself. Tests exercise real mapping/parser/CLI behavior, actual bounded subprocesses and private wl-copy shims, including UTF-8 argv, full membership, five named collections, saved views, write validation, reset, truthful recent-storage failure and complete-source Python compilation. No host tests or GUI windows are needed.
 
-Earlier `release-output/v030-result.json` receipts describe only v0.3.0. The v0.4.0 backend suite adds real BMP/supplementary escaped-copy argv, fresh-mapping refusal, helper failure/timeout, truthful preference warnings and saved-display-schema migration tests. Backend verification does not establish current native UI, live clipboard ownership, upgrade/rollback, hosted CI or publication qualification.
+Earlier `release-output/v030-result.json` receipts describe only v0.3.0. The v0.4.1 backend suite adds real BMP/supplementary escaped-copy argv, fresh-mapping refusal, helper failure/timeout, truthful preference warnings and saved-display-schema migration tests. Backend verification does not establish current native UI, live clipboard ownership, upgrade/rollback, hosted CI or publication qualification.
